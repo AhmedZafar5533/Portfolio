@@ -249,7 +249,7 @@ const HeroSection = () => {
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col justify-center aspect-square">
                     <img
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face"
+                      src="/people/ayaz.jpg"
                       alt="Ayaz Ahmed"
                       className="absolute inset-0 w-full h-full object-cover rounded-xl"
                       loading="lazy"
