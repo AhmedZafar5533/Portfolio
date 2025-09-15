@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 
 const HeroSection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -6,48 +12,164 @@ const HeroSection = () => {
   const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
 
+  // Memoize static data
+  const teamMembers = useMemo(
+    () => [
+      {
+        name: "Shoaib Ali",
+        role: "Creative Director",
+        image: "/people/shoaib.jpg",
+        initial: "S",
+      },
+      {
+        name: "Ahmed Zafar",
+        role: "Lead Developer",
+        image: "/people/ahmed.jpg",
+        initial: "A",
+      },
+      {
+        name: "Ayaz Ahmed",
+        role: "UI/UX Designer",
+        image: "/people/ayaz.jpg",
+        initial: "A",
+      },
+    ],
+    []
+  );
+
+  const showcaseImages = useMemo(
+    () => [
+      {
+        src: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop",
+        alt: "Work showcase",
+        label: "Recent Work",
+      },
+      {
+        src: "/people/brand.jpg",
+        alt: "Design showcase",
+        label: "Brand Identity",
+      },
+    ],
+    []
+  );
+
+  // Optimized resize handler with debouncing
+  const handleResize = useCallback(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
+  // Throttled mouse move handler
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isMobile && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePosition({
+          x: (e.clientX - rect.left) / rect.width,
+          y: (e.clientY - rect.top) / rect.height,
+        });
+      }
+    },
+    [isMobile]
+  );
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 500);
 
-    // Check if mobile
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    // Initial mobile check
+    handleResize();
+
+    // Add resize listener with passive flag for better performance
+    window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [handleResize]);
 
-  const handleMouseMove = (e) => {
-    if (!isMobile && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMousePosition({
-        x: (e.clientX - rect.left) / rect.width,
-        y: (e.clientY - rect.top) / rect.height,
-      });
-    }
-  };
+  // Memoized particle generation
+  const particles = useMemo(() => {
+    const count = isMobile ? 4 : 12;
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      delay: i * 0.5,
+      size: isMobile ? 1 + Math.random() * 1.5 : 1 + Math.random() * 2,
+      duration: 8 + Math.random() * 6,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+    }));
+  }, [isMobile]);
 
-  const GoldParticle = ({ delay, size, duration }) => (
+  // Optimized particle component
+  const GoldParticle = React.memo(({ particle }) => (
     <div
       className="absolute rounded-full opacity-20 sm:opacity-30 pointer-events-none"
       style={{
-        width: `${size}px`,
-        height: `${size}px`,
+        width: `${particle.size}px`,
+        height: `${particle.size}px`,
         background: "linear-gradient(45deg, #FFD700, #FFA500, #FF6347)",
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        animationDelay: `${delay}s`,
-        animationDuration: `${duration}s`,
+        left: `${particle.left}%`,
+        top: `${particle.top}%`,
+        animationDelay: `${particle.delay}s`,
+        animationDuration: `${particle.duration}s`,
         filter: "blur(1px)",
         animation: "luxuryFloat infinite ease-in-out",
       }}
     />
-  );
+  ));
+
+  // Optimized team card component
+  const TeamCard = React.memo(({ member, className = "" }) => (
+    <div
+      className={`relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 lg:p-4 flex flex-col justify-center ${className}`}
+    >
+      <img
+        src={member.image}
+        alt={member.name}
+        className="absolute inset-0 w-full h-full object-cover rounded-xl lg:rounded-none"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl lg:rounded-none" />
+      <div className="relative z-10">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-xs sm:text-sm lg:text-lg mb-2 lg:mb-3">
+          {member.initial}
+        </div>
+        <div className="text-white text-xs sm:text-sm font-light">
+          {member.name}
+        </div>
+        <div className="text-gray-400 text-xs">{member.role}</div>
+      </div>
+    </div>
+  ));
+
+  // Optimized showcase image component
+  const ShowcaseImage = React.memo(({ image, className = "" }) => (
+    <div className={`relative group overflow-hidden rounded-xl ${className}`}>
+      <img
+        src={image.src}
+        alt={image.alt}
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        loading="lazy"
+      />
+      <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white text-xs font-medium">
+        {image.label}
+      </div>
+    </div>
+  ));
+
+  // Shared animation classes
+  const fadeInUp = `transform transition-all duration-1500 ${
+    isLoaded ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
+  }`;
+
+  const fadeInRight = `transform transition-all duration-1500 delay-500 ${
+    isLoaded ? "translate-x-0 opacity-100" : "translate-x-20 opacity-0"
+  }`;
+
+  const slideUp = (delay) =>
+    `transform transition-all duration-1000 delay-${delay} ${
+      isLoaded ? "translate-y-0" : "translate-y-full"
+    }`;
 
   return (
     <div
@@ -71,29 +193,20 @@ const HeroSection = () => {
         />
       </div>
 
-      {/* Luxury particles - reduced on mobile */}
-      {Array.from({ length: isMobile ? 4 : 12 }).map((_, i) => (
-        <GoldParticle
-          key={i}
-          delay={i * 0.5}
-          size={isMobile ? 1 + Math.random() * 1.5 : 1 + Math.random() * 2}
-          duration={8 + Math.random() * 6}
-        />
+      {/* Luxury particles */}
+      {particles.map((particle) => (
+        <GoldParticle key={particle.id} particle={particle} />
       ))}
 
       {/* Main Content */}
       <div className="relative z-20 mt-6 pt-10 pb-8 lg:pb-16 min-h-screen flex items-center justify-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          {/* Mobile/Tablet Layout (below lg) */}
-          <div className="lg:hidden ">
+          {/* Mobile/Tablet Layout */}
+          <div className="lg:hidden">
             <div className="space-y-8 sm:space-y-12">
               {/* Content Section */}
               <div
-                className={`space-y-6 sm:space-y-8 text-left sm:text-left transform transition-all duration-1500 ${
-                  isLoaded
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-20 opacity-0"
-                }`}
+                className={`space-y-6 sm:space-y-8 text-left sm:text-left ${fadeInUp}`}
               >
                 {/* Premium badge */}
                 <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-amber-500/10 to-rose-500/10 backdrop-blur-sm border border-amber-500/20 rounded-full px-4 py-2 sm:px-6 sm:py-3">
@@ -107,29 +220,19 @@ const HeroSection = () => {
                 <div className="space-y-2">
                   <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-extralight text-white leading-[0.9] tracking-tight">
                     <div className="overflow-hidden">
-                      <div
-                        className={`transform transition-all duration-1000 delay-300 ${
-                          isLoaded ? "translate-y-0" : "translate-y-full"
-                        }`}
-                      >
-                        CRAFTING
-                      </div>
+                      <div className={slideUp("300")}>CRAFTING</div>
                     </div>
                     <div className="overflow-hidden">
                       <div
-                        className={`bg-gradient-to-r from-amber-400 to-rose-500 bg-clip-text text-transparent transform transition-all duration-1000 delay-500 ${
-                          isLoaded ? "translate-y-0" : "translate-y-full"
-                        }`}
+                        className={`bg-gradient-to-r from-amber-400 to-rose-500 bg-clip-text text-transparent ${slideUp(
+                          "500"
+                        )}`}
                       >
                         EXCELLENCE
                       </div>
                     </div>
                     <div className="overflow-hidden">
-                      <div
-                        className={`text-gray-400 transform transition-all duration-1000 delay-700 ${
-                          isLoaded ? "translate-y-0" : "translate-y-full"
-                        }`}
-                      >
+                      <div className={`text-gray-400 ${slideUp("700")}`}>
                         TOGETHER
                       </div>
                     </div>
@@ -151,7 +254,10 @@ const HeroSection = () => {
 
                   {/* Premium CTA */}
                   <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-8">
-                    <button className="group relative overflow-hidden">
+                    <button
+                      className="group relative overflow-hidden"
+                      aria-label="View our work"
+                    >
                       <div className="relative bg-gradient-to-r from-amber-500 to-rose-500 p-[1px] rounded-full">
                         <div className="bg-black rounded-full px-6 py-3 group-hover:bg-transparent transition-all duration-500">
                           <span className="text-white text-sm font-light tracking-widest group-hover:text-black transition-colors duration-500">
@@ -173,13 +279,7 @@ const HeroSection = () => {
               </div>
 
               {/* Visual Grid Section */}
-              <div
-                className={`transform transition-all duration-1500 delay-500 ${
-                  isLoaded
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-20 opacity-0"
-                }`}
-              >
+              <div className={fadeInUp}>
                 {/* Main featured image */}
                 <div className="relative group mb-6">
                   <div className="absolute -inset-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-rose-500 p-[2px] transform rotate-1 group-hover:rotate-0 transition-transform duration-700 rounded-2xl">
@@ -190,6 +290,7 @@ const HeroSection = () => {
                       src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=600&fit=crop"
                       alt="Portfolio showcase"
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity duration-700"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-amber-900/20" />
                     <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm border border-amber-500/30 rounded-lg p-2 sm:p-3">
@@ -200,73 +301,20 @@ const HeroSection = () => {
                   </div>
                 </div>
 
-                {/* Partner Cards */}
+                {/* Team Members Grid */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <div className="relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col justify-center aspect-square">
-                    <img
-                      src="/people/shoaib.jpg"
-                      alt="Shoaib Ali"
-                      className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                      loading="lazy"
+                  {teamMembers.slice(0, 2).map((member) => (
+                    <TeamCard
+                      key={member.name}
+                      member={member}
+                      className="aspect-square"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl" />
-                    <div className="relative z-10">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-xs sm:text-sm mb-2">
-                        S
-                      </div>
-                      <div className="text-white text-xs sm:text-sm font-light">
-                        Shoaib Ali
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        Creative Director
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col justify-center aspect-square">
-                    <img
-                      src="/people/ahmed.jpg"
-                      alt="Ahmed Zafar"
-                      className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl" />
-                    <div className="relative z-10">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-xs sm:text-sm mb-2">
-                        A
-                      </div>
-                      <div className="text-white text-xs sm:text-sm font-light">
-                        Ahmed Zafar
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        Lead Developer
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                {/* Stats and Third Partner Row */}
+                {/* Third Partner and Stats */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <div className="relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col justify-center aspect-square">
-                    <img
-                      src="/people/ayaz.jpg"
-                      alt="Ayaz Ahmed"
-                      className="absolute inset-0 w-full h-full object-cover rounded-xl"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl" />
-                    <div className="relative z-10">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-xs sm:text-sm mb-2">
-                        A
-                      </div>
-                      <div className="text-white text-xs sm:text-sm font-light">
-                        Ayaz Ahmed
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        UI/UX Designer
-                      </div>
-                    </div>
-                  </div>
+                  <TeamCard member={teamMembers[2]} className="aspect-square" />
                   <div className="bg-gradient-to-br from-amber-500/10 to-rose-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 flex flex-col justify-center aspect-square">
                     <div className="text-amber-400 text-xl sm:text-2xl font-extralight mb-1">
                       20+
@@ -279,42 +327,22 @@ const HeroSection = () => {
 
                 {/* Showcase Images */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="relative group overflow-hidden rounded-xl aspect-[3/2]">
-                    <img
-                      src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&h=300&fit=crop"
-                      alt="Work showcase"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  {showcaseImages.map((image, index) => (
+                    <ShowcaseImage
+                      key={index}
+                      image={image}
+                      className="aspect-[3/2]"
                     />
-                    <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white text-xs font-medium">
-                      Recent Work
-                    </div>
-                  </div>
-
-                  <div className="relative group overflow-hidden rounded-xl aspect-[3/2]">
-                    <img
-                      src="/people/brand.jpg"
-                      alt="Design showcase"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white text-xs font-medium">
-                      Brand Identity
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Desktop Layout (lg and above) */}
+          {/* Desktop Layout */}
           <div className="hidden lg:grid lg:grid-cols-12 gap-8 items-start mb-10">
-            {/* Left Content - Spans 5 columns */}
-            <div
-              className={`lg:col-span-5 space-y-12 transform transition-all duration-1500 ${
-                isLoaded
-                  ? "translate-y-0 opacity-100"
-                  : "translate-y-20 opacity-0"
-              }`}
-            >
+            {/* Left Content */}
+            <div className={`lg:col-span-5 space-y-12 ${fadeInUp}`}>
               {/* Premium badge */}
               <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-amber-500/10 to-rose-500/10 backdrop-blur-sm border border-amber-500/20 rounded-full px-6 py-3">
                 <div className="w-2 h-2 bg-gradient-to-r from-amber-400 to-rose-500 rounded-full animate-pulse" />
@@ -327,29 +355,19 @@ const HeroSection = () => {
               <div className="space-y-4">
                 <h1 className="text-6xl lg:text-7xl xl:text-8xl font-extralight text-white leading-[0.9] tracking-tight">
                   <div className="overflow-hidden">
-                    <div
-                      className={`transform transition-all duration-1000 delay-300 ${
-                        isLoaded ? "translate-y-0" : "translate-y-full"
-                      }`}
-                    >
-                      CRAFTING
-                    </div>
+                    <div className={slideUp("300")}>CRAFTING</div>
                   </div>
                   <div className="overflow-hidden">
                     <div
-                      className={`bg-gradient-to-r from-amber-400 via-yellow-300 to-rose-500 bg-clip-text text-transparent transform transition-all duration-1000 delay-500 ${
-                        isLoaded ? "translate-y-0" : "translate-y-full"
-                      }`}
+                      className={`bg-gradient-to-r from-amber-400 via-yellow-300 to-rose-500 bg-clip-text text-transparent ${slideUp(
+                        "500"
+                      )}`}
                     >
                       EXCELLENCE
                     </div>
                   </div>
                   <div className="overflow-hidden">
-                    <div
-                      className={`text-gray-400 transform transition-all duration-1000 delay-700 ${
-                        isLoaded ? "translate-y-0" : "translate-y-full"
-                      }`}
-                    >
+                    <div className={`text-gray-400 ${slideUp("700")}`}>
                       TOGETHER
                     </div>
                   </div>
@@ -369,9 +387,11 @@ const HeroSection = () => {
                   is a symphony of innovation and craftsmanship.
                 </p>
 
-                {/* Premium CTA */}
                 <div className="flex items-center space-x-8">
-                  <button className="group relative overflow-hidden">
+                  <button
+                    className="group relative overflow-hidden"
+                    aria-label="View our work"
+                  >
                     <div className="relative bg-gradient-to-r from-amber-500 to-rose-500 p-[1px] rounded-full">
                       <div className="bg-black rounded-full px-8 py-4 group-hover:bg-transparent transition-all duration-500">
                         <span className="text-white text-sm font-light tracking-widest group-hover:text-black transition-colors duration-500">
@@ -392,15 +412,11 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Right Visual Grid - Spans 7 columns */}
+            {/* Right Visual Grid */}
             <div
-              className={`lg:col-span-7 grid grid-cols-6 grid-rows-4 gap-4 h-[500px] xl:h-[600px] transform transition-all duration-1500 delay-500 ${
-                isLoaded
-                  ? "translate-x-0 opacity-100"
-                  : "translate-x-20 opacity-0"
-              }`}
+              className={`lg:col-span-7 grid grid-cols-6 grid-rows-4 gap-4 h-[500px] xl:h-[600px] ${fadeInRight}`}
             >
-              {/* Main featured image - Large */}
+              {/* Main featured image */}
               <div className="col-span-4 row-span-3 relative group">
                 <div className="absolute -inset-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-rose-500 p-[2px] transform rotate-1 group-hover:rotate-0 transition-transform duration-700 rounded-2xl">
                   <div className="bg-black w-full h-full rounded-xl" />
@@ -410,6 +426,7 @@ const HeroSection = () => {
                     src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=800&fit=crop"
                     alt="Portfolio showcase"
                     className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity duration-700"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-amber-900/20" />
                   <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-sm border border-amber-500/30 rounded-lg p-3">
@@ -420,66 +437,16 @@ const HeroSection = () => {
                 </div>
               </div>
 
-              {/* Partner Card 1 */}
-              <div className="col-span-2 row-span-1 relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 flex flex-col justify-center">
-                <img
-                  src="/people/shoaib.jpg"
-                  alt="Shoaib Ali"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
+              {/* Team Cards */}
+              {teamMembers.map((member, index) => (
+                <TeamCard
+                  key={member.name}
+                  member={member}
+                  className="col-span-2 row-span-1"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-lg mb-3">
-                    S
-                  </div>
-                  <div className="text-white text-sm font-light">
-                    Shoaib Ali
-                  </div>
-                  <div className="text-gray-400 text-xs">Creative Director</div>
-                </div>
-              </div>
+              ))}
 
-              {/* Partner Card 2 */}
-              <div className="col-span-2 row-span-1 relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 flex flex-col justify-center">
-                <img
-                  src="/people/ahmed.jpg"
-                  alt="Ahmed Zafar"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-lg mb-3">
-                    A
-                  </div>
-                  <div className="text-white text-sm font-light">
-                    Ahmed Zafar
-                  </div>
-                  <div className="text-gray-400 text-xs">Lead Developer</div>
-                </div>
-              </div>
-              {/* Partner Card 3 - Third Partner replacing client satisfaction */}
-
-              <div className="col-span-2 row-span-1 relative overflow-hidden bg-gradient-to-br from-amber-900/20 to-rose-900/20 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 flex flex-col justify-center">
-                <img
-                  src="/people/ayaz.jpg"
-                  alt="Ayaz Ahmed"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 flex items-center justify-center text-black font-bold text-lg mb-3">
-                    A
-                  </div>
-                  <div className="text-white text-sm font-light">
-                    Ayaz Ahmed
-                  </div>
-                  <div className="text-gray-400 text-xs">UI/UX Designer</div>
-                </div>
-              </div>
-              {/* Stats showcase - Now in first position */}
+              {/* Stats */}
               <div className="col-span-2 row-span-1 bg-gradient-to-br from-amber-500/10 to-rose-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 flex flex-col justify-center">
                 <div className="text-amber-400 text-2xl font-extralight mb-1">
                   20+
@@ -489,31 +456,14 @@ const HeroSection = () => {
                 </div>
               </div>
 
-              {/* Small showcase image 1 */}
-              <div className="col-span-2 row-span-1 relative group overflow-hidden rounded-xl">
-                <img
-                  src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=300&h=200&fit=crop"
-                  alt="Work showcase"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              {/* Showcase Images */}
+              {showcaseImages.map((image, index) => (
+                <ShowcaseImage
+                  key={index}
+                  image={image}
+                  className="col-span-2 row-span-1"
                 />
-                <div className="absolute inset-0 " />
-                <div className="absolute bottom-3 left-3 text-white text-xs font-medium">
-                  Recent Work
-                </div>
-              </div>
-
-              {/* Small showcase image 2 */}
-              <div className="col-span-2 row-span-1 relative group overflow-hidden rounded-xl">
-                <img
-                  src="/people/brand.jpg"
-                  alt="Design showcase"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 " />
-                <div className="absolute bottom-3 left-3 text-white text-xs font-medium">
-                  Brand Identity
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

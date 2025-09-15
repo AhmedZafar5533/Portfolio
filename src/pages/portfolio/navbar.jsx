@@ -48,14 +48,15 @@ const Navigation = () => {
     const element = document.getElementById(sectionId);
     if (element) {
       const yOffset = -100; // Offset for fixed navbar
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      
+      const y =
+        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
       window.scrollTo({
         top: y,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
-    
+
     // Close mobile menu if open
     setIsMobileMenuOpen(false);
   };
@@ -65,14 +66,14 @@ const Navigation = () => {
     { name: "PORTFOLIO", id: "featured" },
     { name: "EXPERTISE", id: "services" },
     { name: "CLIENT STORIES", id: "testimonials" },
-    { name: "CONNECT", id: "footer" }
+    { name: "CONNECT", id: "footer" },
   ];
 
   const mobileNavItems = [
     { name: "PORTFOLIO", id: "featured" },
     { name: "EXPERTISE", id: "services" },
     { name: "CLIENT STORIES", id: "testimonials" },
-    { name: "CONNECT", id: "footer" }
+    { name: "CONNECT", id: "footer" },
   ];
 
   return (
@@ -88,8 +89,8 @@ const Navigation = () => {
         <div className="max-w-7xl  mx-auto flex justify-between items-center px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
           {/* Logo / Name */}
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => scrollToSection('hero')}
+            <button
+              onClick={() => scrollToSection("hero")}
               className="text-white font-light text-base sm:text-lg md:text-xl tracking-[0.15em] sm:tracking-[0.2em] hover:text-amber-400 transition-colors duration-300"
             >
               AURENIX
@@ -174,10 +175,10 @@ const Navigation = () => {
         {[
           { id: "hero", label: "Home" },
           { id: "featured", label: "Portfolio" },
-          { id: "services", label: "Services" }
+          { id: "services", label: "Services" },
         ].map((item, i) => (
-          <button 
-            key={i} 
+          <button
+            key={i}
             onClick={() => scrollToSection(item.id)}
             className="group cursor-pointer relative"
             title={item.label}

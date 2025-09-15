@@ -103,7 +103,7 @@ const ArchitecturalContactFooter = () => {
     setIsSubmitting(true);
 
     try {
-      const success = await fetch(import.meta.env.VITE_API_URL || "http://localhost:3000/send-email", {
+      const success = await fetch(import.meta.env.VITE_API_URL || "https://portfolio-89bv.vercel.app/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
