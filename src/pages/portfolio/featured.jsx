@@ -7,6 +7,90 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, Text3D, Center } from "@react-three/drei";
+import * as THREE from "three";
+
+// 3D Project Sphere Component
+const ProjectSphere = React.memo(({ project, position, isActive, onClick }) => {
+  const meshRef = useRef();
+  const [hovered, setHovered] = useState(false);
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += 0.005;
+      
+      if (hovered) {
+        meshRef.current.scale.lerp(new THREE.Vector3(1.2, 1.2, 1.2), 0.1);
+      } else if (isActive) {
+        meshRef.current.scale.lerp(new THREE.Vector3(1.1, 1.1, 1.1), 0.1);
+      } else {
+        meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+      }
+    }
+  });
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={position}
+      onClick={onClick}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      <sphereGeometry args={[0.8, 32, 32]} />
+      <meshStandardMaterial
+        color={isActive ? "#FFD700" : "#FFA500"}
+        emissive={isActive ? "#FF6347" : "#000000"}
+        emissiveIntensity={hovered ? 0.5 : 0.2}
+        metalness={0.8}
+        roughness={0.2}
+      />
+    </mesh>
+  );
+});
+
+ProjectSphere.displayName = "ProjectSphere";
+
+// 3D Carousel Scene
+const CarouselScene = React.memo(({ projects, activeIndex, setActiveIndex }) => {
+  const radius = 4;
+  const angleStep = (Math.PI * 2) / projects.length;
+
+  return (
+    <>
+      <PerspectiveCamera makeDefault position={[0, 0, 8]} />
+      <OrbitControls 
+        enableZoom={false} 
+        enablePan={false}
+        autoRotate
+        autoRotateSpeed={0.5}
+      />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
+      <pointLight position={[-10, -10, -10]} intensity={0.5} color="#FFD700" />
+      
+      {projects.map((project, index) => {
+        const angle = index * angleStep;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        
+        return (
+          <ProjectSphere
+            key={index}
+            project={project}
+            position={[x, 0, z]}
+            isActive={activeIndex === index}
+            onClick={() => setActiveIndex(index)}
+          />
+        );
+      })}
+    </>
+  );
+});
+
+CarouselScene.displayName = "CarouselScene";
 
 // Optimized IntersectionObserver hook with cleanup and memoization
 function useInView(options = {}) {
@@ -249,7 +333,17 @@ const GoldParticle = React.memo(({ delay, size, duration }) => {
 
 const FeaturedProjectsCarousel = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Memoize static data
   const images = useMemo(
@@ -271,6 +365,7 @@ const FeaturedProjectsCarousel = () => {
         description:
           "Transforming retail experiences with cutting-edge technology",
         metrics: "300% increase in conversions",
+        image: "/proj/img1.webp"
       },
       {
         title: "Brand Identity Suite",
@@ -278,12 +373,14 @@ const FeaturedProjectsCarousel = () => {
         description:
           "Complete brand transformation for luxury market positioning",
         metrics: "98% brand recognition",
+        image: "/proj/img2.webp"
       },
       {
         title: "Enterprise Platform",
         category: "Web Development",
         description: "Scalable solution serving millions of users globally",
         metrics: "99.9% uptime achieved",
+        image: "/proj/img3.webp"
       },
     ],
     []
@@ -361,9 +458,71 @@ const FeaturedProjectsCarousel = () => {
           </p>
         </Reveal>
 
-        {/* Optimized Carousel */}
+        {/* 3D Carousel or Fallback */}
         <Reveal as="section" delay={120} className="mb-16">
-          <LuxuryCarousel images={images} autoplayDelay={4000} />
+          {!isMobile ? (
+            <div className="relative z-20 w-full max-w-6xl mx-auto">
+              <div className="relative h-[500px] lg:h-[600px] rounded-3xl overflow-hidden bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-sm border border-amber-500/20">
+                <Canvas>
+                  <CarouselScene 
+                    projects={projects} 
+                    activeIndex={activeIndex}
+                    setActiveIndex={setActiveIndex}
+                  />
+                </Canvas>
+                
+                {/* Project Info Overlay */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeIndex}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="absolute bottom-8 left-8 right-8 bg-black/80 backdrop-blur-lg border border-amber-500/30 rounded-2xl p-6"
+                  >
+                    <div className="text-amber-400 text-sm font-light tracking-widest mb-2">
+                      {projects[activeIndex].category}
+                    </div>
+                    <h3 className="text-white text-2xl lg:text-3xl font-light mb-3">
+                      {projects[activeIndex].title}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      {projects[activeIndex].description}
+                    </p>
+                    <div className="text-amber-300 font-medium text-sm">
+                      {projects[activeIndex].metrics}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Navigation Dots */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+                  <div className="flex space-x-3">
+                    {projects.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveIndex(index)}
+                        className="relative group/dot"
+                      >
+                        <div
+                          className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${
+                            index === activeIndex
+                              ? "border-amber-400 bg-amber-400"
+                              : "border-amber-400/50 bg-transparent hover:border-amber-400/80"
+                          }`}
+                        />
+                        {index === activeIndex && (
+                          <div className="absolute inset-0 w-3 h-3 rounded-full bg-amber-400/30 animate-ping" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <LuxuryCarousel images={images} autoplayDelay={4000} />
+          )}
         </Reveal>
 
         {/* Project Stats */}
