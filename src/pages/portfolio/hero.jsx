@@ -5,12 +5,72 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { Canvas } from "@react-three/fiber";
+import { Points, PointMaterial, OrbitControls } from "@react-three/drei";
+import * as THREE from "three";
+
+// 3D Particle Field Component
+const ParticleField = React.memo(({ mousePosition }) => {
+  const pointsRef = useRef();
+  const [sphere] = useState(() => {
+    const positions = [];
+    const particleCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 500 : 1500;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const radius = 3 + Math.random() * 2;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
+      const z = radius * Math.cos(phi);
+      
+      positions.push(x, y, z);
+    }
+    
+    return new Float32Array(positions);
+  });
+
+  useEffect(() => {
+    if (!pointsRef.current) return;
+    
+    const animate = () => {
+      if (pointsRef.current) {
+        pointsRef.current.rotation.y += 0.001;
+        pointsRef.current.rotation.x = mousePosition.y * 0.05;
+        pointsRef.current.rotation.z = mousePosition.x * 0.05;
+      }
+    };
+    
+    const interval = setInterval(animate, 16);
+    return () => clearInterval(interval);
+  }, [mousePosition]);
+
+  return (
+    <Points ref={pointsRef} positions={sphere} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#FFD700"
+        size={0.02}
+        sizeAttenuation={true}
+        depthWrite={false}
+        opacity={0.6}
+        blending={THREE.AdditiveBlending}
+      />
+    </Points>
+  );
+});
+
+ParticleField.displayName = "ParticleField";
 
 const HeroSection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [glitchActive, setGlitchActive] = useState(false);
   const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll();
 
   // Memoize static data
   const teamMembers = useMemo(
@@ -58,15 +118,20 @@ const HeroSection = () => {
     setIsMobile(window.innerWidth < 768);
   }, []);
 
-  // Throttled mouse move handler
+  // Throttled mouse move handler with glitch trigger
   const handleMouseMove = useCallback(
     (e) => {
       if (!isMobile && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        setMousePosition({
-          x: (e.clientX - rect.left) / rect.width,
-          y: (e.clientY - rect.top) / rect.height,
-        });
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        setMousePosition({ x, y });
+        
+        // Random glitch effect on mouse move
+        if (Math.random() > 0.98) {
+          setGlitchActive(true);
+          setTimeout(() => setGlitchActive(false), 100);
+        }
       }
     },
     [isMobile]
@@ -178,10 +243,43 @@ const HeroSection = () => {
       onMouseMove={handleMouseMove}
       id="hero"
     >
+      {/* 3D Particle Field Background */}
+      {!isMobile && (
+        <div className="absolute inset-0 z-0">
+          <Canvas
+            camera={{ position: [0, 0, 5], fov: 75 }}
+            style={{ background: "transparent" }}
+          >
+            <ParticleField mousePosition={mousePosition} />
+          </Canvas>
+        </div>
+      )}
+
+      {/* Animated Grid Lines */}
+      <motion.div 
+        className="absolute inset-0 z-5"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255, 215, 0, ${0.05 + mousePosition.y * 0.1}) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 215, 0, ${0.05 + mousePosition.x * 0.1}) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          opacity: 0.3,
+        }}
+        animate={{
+          backgroundPosition: [`0px 0px`, `50px 50px`],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
+
       {/* Premium background texture */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/5 via-transparent to-rose-900/5" />
-        <div
+        <motion.div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `radial-gradient(circle at ${
@@ -216,25 +314,55 @@ const HeroSection = () => {
                   </span>
                 </div>
 
-                {/* Main Heading */}
+                {/* Main Heading with Liquid Morphing Effect */}
                 <div className="space-y-2">
                   <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-extralight text-white leading-[0.9] tracking-tight">
                     <div className="overflow-hidden">
-                      <div className={slideUp("300")}>CRAFTING</div>
+                      <motion.div 
+                        className={slideUp("300")}
+                        animate={glitchActive ? {
+                          x: [0, -2, 2, -1, 1, 0],
+                          textShadow: [
+                            "0 0 0px rgba(255,255,255,0)",
+                            "2px 0 4px rgba(255,0,0,0.8), -2px 0 4px rgba(0,255,255,0.8)",
+                            "0 0 0px rgba(255,255,255,0)"
+                          ]
+                        } : {}}
+                        transition={{ duration: 0.1 }}
+                      >
+                        CRAFTING
+                      </motion.div>
                     </div>
                     <div className="overflow-hidden">
-                      <div
+                      <motion.div
                         className={`bg-gradient-to-r from-amber-400 to-rose-500 bg-clip-text text-transparent ${slideUp(
                           "500"
                         )}`}
+                        animate={{
+                          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                        }}
+                        transition={{
+                          duration: 5,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        style={{
+                          backgroundSize: "200% 200%",
+                        }}
                       >
                         EXCELLENCE
-                      </div>
+                      </motion.div>
                     </div>
                     <div className="overflow-hidden">
-                      <div className={`text-gray-400 ${slideUp("700")}`}>
+                      <motion.div 
+                        className={`text-gray-400 ${slideUp("700")}`}
+                        whileHover={{
+                          scale: 1.05,
+                          textShadow: "0 0 20px rgba(255, 215, 0, 0.5)",
+                        }}
+                      >
                         TOGETHER
-                      </div>
+                      </motion.div>
                     </div>
                   </h1>
                 </div>
@@ -351,25 +479,55 @@ const HeroSection = () => {
                 </span>
               </div>
 
-              {/* Main Heading */}
+              {/* Main Heading with Liquid Morphing Effect */}
               <div className="space-y-4">
                 <h1 className="text-6xl lg:text-7xl xl:text-8xl font-extralight text-white leading-[0.9] tracking-tight">
                   <div className="overflow-hidden">
-                    <div className={slideUp("300")}>CRAFTING</div>
+                    <motion.div 
+                      className={slideUp("300")}
+                      animate={glitchActive ? {
+                        x: [0, -2, 2, -1, 1, 0],
+                        textShadow: [
+                          "0 0 0px rgba(255,255,255,0)",
+                          "2px 0 4px rgba(255,0,0,0.8), -2px 0 4px rgba(0,255,255,0.8)",
+                          "0 0 0px rgba(255,255,255,0)"
+                        ]
+                      } : {}}
+                      transition={{ duration: 0.1 }}
+                    >
+                      CRAFTING
+                    </motion.div>
                   </div>
                   <div className="overflow-hidden">
-                    <div
+                    <motion.div
                       className={`bg-gradient-to-r from-amber-400 via-yellow-300 to-rose-500 bg-clip-text text-transparent ${slideUp(
                         "500"
                       )}`}
+                      animate={{
+                        backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                      }}
+                      transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      style={{
+                        backgroundSize: "200% 200%",
+                      }}
                     >
                       EXCELLENCE
-                    </div>
+                    </motion.div>
                   </div>
                   <div className="overflow-hidden">
-                    <div className={`text-gray-400 ${slideUp("700")}`}>
+                    <motion.div 
+                      className={`text-gray-400 ${slideUp("700")}`}
+                      whileHover={{
+                        scale: 1.05,
+                        textShadow: "0 0 20px rgba(255, 215, 0, 0.5)",
+                      }}
+                    >
                       TOGETHER
-                    </div>
+                    </motion.div>
                   </div>
                 </h1>
               </div>

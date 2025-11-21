@@ -5,6 +5,9 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 // Constants
 const SERVICES_DATA = [
@@ -67,6 +70,54 @@ const BACKGROUND_GRADIENTS = {
 const LOOP_INTERVAL = 4000; // 4 seconds
 const INTERSECTION_THRESHOLD = 0.2;
 
+// Neural Network Visualization Component
+const NeuralNetwork = React.memo(() => {
+  const linesRef = useRef();
+  const pointsRef = useRef();
+  
+  const nodes = useMemo(() => {
+    const nodePositions = [];
+    for (let i = 0; i < 15; i++) {
+      nodePositions.push(
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.5) * 4
+      );
+    }
+    return new Float32Array(nodePositions);
+  }, []);
+
+  useFrame((state) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += 0.002;
+    }
+  });
+
+  return (
+    <group ref={pointsRef}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={nodes.length / 3}
+            array={nodes}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          size={0.15}
+          color="#FFD700"
+          transparent
+          opacity={0.8}
+          sizeAttenuation
+        />
+      </points>
+    </group>
+  );
+});
+
+NeuralNetwork.displayName = "NeuralNetwork";
+
 // Memoized Components
 const HexagonalOrb = React.memo(({ delay, size, opacity, left, top }) => (
   <div
@@ -90,20 +141,33 @@ HexagonalOrb.displayName = "HexagonalOrb";
 
 const ServiceCard = React.memo(
   ({ service, index, isActive, onClick, onMouseEnter, onMouseLeave }) => (
-    <div
-      className={`relative group cursor-pointer transition-all duration-700 ${
-        isActive ? "scale-105" : "scale-100"
-      }`}
+    <motion.div
+      className={`relative group cursor-pointer transition-all duration-700`}
       onClick={() => onClick(index)}
       onMouseEnter={() => onMouseEnter(index)}
       onMouseLeave={onMouseLeave}
+      whileHover={{
+        scale: 1.05,
+        rotateY: 5,
+        rotateX: 5,
+      }}
+      animate={{
+        scale: isActive ? 1.05 : 1,
+      }}
+      style={{
+        transformStyle: "preserve-3d",
+        perspective: 1000,
+      }}
     >
-      <div
+      <motion.div
         className={`relative p-8 rounded-2xl backdrop-blur-sm transition-all duration-700 ${
           isActive
             ? "border-2 border-amber-500/30"
             : "bg-gray-900/20 border border-gray-800/50 hover:border-amber-500/20"
         }`}
+        style={{
+          transformStyle: "preserve-3d",
+        }}
       >
         {isActive && (
           <div className="absolute -left-4 top-1/2 transform -translate-y-1/2">
@@ -165,16 +229,16 @@ const ServiceCard = React.memo(
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div
+      <motion.div
         className={`absolute -inset-4 bg-gradient-to-r from-amber-500/0 to-rose-500/0 rounded-3xl blur-2xl transition-all duration-700 -z-10 ${
           isActive
             ? "from-amber-500/20 to-rose-500/20"
             : "group-hover:from-amber-500/5 group-hover:to-rose-500/5"
         }`}
       />
-    </div>
+    </motion.div>
   )
 );
 
