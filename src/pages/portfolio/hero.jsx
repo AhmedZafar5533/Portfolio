@@ -15,7 +15,7 @@ const ParticleField = React.memo(({ mousePosition }) => {
   const pointsRef = useRef();
   const [sphere] = useState(() => {
     const positions = [];
-    const particleCount = window.innerWidth < 768 ? 500 : 1500;
+    const particleCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 500 : 1500;
     
     for (let i = 0; i < particleCount; i++) {
       const radius = 3 + Math.random() * 2;

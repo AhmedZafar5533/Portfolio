@@ -134,7 +134,7 @@ const TechCard = React.memo(({ tech, index }) => {
                 ease: "linear"
               }}
               style={{
-                background: `radial-gradient(circle at center, ${tech.accent.split(' ')[1]}, transparent)`
+                background: `radial-gradient(circle at center, ${tech.accent.split(' ')?.[1] || tech.accent}, transparent)`
               }}
             />
 
@@ -227,7 +227,7 @@ const StatCard = React.memo(
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
           <div
             className={`w-8 sm:w-12 md:w-16 h-px bg-gradient-to-r from-transparent ${
-              accentColor.split(" ")[1]
+              accentColor.split(" ")?.[1] || accentColor
             }/60 to-transparent`}
           />
         </div>
@@ -243,7 +243,7 @@ const StatCard = React.memo(
           {showPlus && (
             <div
               className={`absolute -top-2 sm:-top-3 md:-top-4 -right-2 sm:-right-3 md:-right-4 text-xl sm:text-2xl md:text-3xl ${
-                accentColor.split(" ")[1]
+                accentColor.split(" ")?.[1] || accentColor
               }/80 font-light`}
             >
               +
@@ -252,7 +252,7 @@ const StatCard = React.memo(
           {showPercent && (
             <div
               className={`absolute -top-1 sm:-top-2 -right-3 sm:-right-4 md:-right-6 text-2xl sm:text-3xl md:text-4xl ${
-                accentColor.split(" ")[1]
+                accentColor.split(" ")?.[1] || accentColor
               }/80 font-thin`}
             >
               %
@@ -272,7 +272,7 @@ const StatCard = React.memo(
         <div className="flex justify-center mt-4 sm:mt-6 md:mt-8">
           <div
             className={`w-4 sm:w-6 md:w-8 h-px bg-gradient-to-r from-transparent ${
-              accentColor.split(" ")[1]
+              accentColor.split(" ")?.[1] || accentColor
             }/40 to-transparent`}
           />
         </div>
