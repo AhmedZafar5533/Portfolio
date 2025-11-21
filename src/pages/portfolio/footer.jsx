@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
   Calendar,
@@ -11,6 +12,71 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
+
+// Starfield Component
+const Starfield = React.memo(() => {
+  const stars = useMemo(() => {
+    return Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      duration: Math.random() * 3 + 2,
+      delay: Math.random() * 2,
+    }));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {stars.map((star) => (
+        <motion.div
+          key={star.id}
+          className="absolute rounded-full bg-white"
+          style={{
+            left: `${star.x}%`,
+            top: `${star.y}%`,
+            width: `${star.size}px`,
+            height: `${star.size}px`,
+          }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0, 1, 0],
+          }}
+          transition={{
+            duration: star.duration,
+            repeat: Infinity,
+            delay: star.delay,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+});
+
+Starfield.displayName = "Starfield";
+
+// Aurora Effect Component
+const AuroraEffect = React.memo(() => (
+  <motion.div
+    className="absolute inset-0 opacity-30"
+    animate={{
+      background: [
+        "radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%)",
+        "radial-gradient(circle at 80% 50%, rgba(16, 185, 129, 0.3) 0%, transparent 50%)",
+        "radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)",
+        "radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%)",
+      ],
+    }}
+    transition={{
+      duration: 10,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  />
+));
+
+AuroraEffect.displayName = "AuroraEffect";
 
 const ArchitecturalContactFooter = () => {
   const [formData, setFormData] = useState({
@@ -25,6 +91,7 @@ const ArchitecturalContactFooter = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [portalHover, setPortalHover] = useState(false);
   const contactRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -155,6 +222,12 @@ const ArchitecturalContactFooter = () => {
 
   return (
     <div className="bg-black relative overflow-hidden min-h-screen">
+      {/* Starfield Background */}
+      <Starfield />
+      
+      {/* Aurora Borealis Effect */}
+      <AuroraEffect />
+
       {/* Floating luxury orbs - hidden on very small screens */}
       <div className="hidden sm:block">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -439,31 +512,72 @@ const ArchitecturalContactFooter = () => {
                             </div>
                           </div>
 
-                          <button
+                          <motion.button
                             type="submit"
                             disabled={isSubmitting}
                             className="group relative overflow-hidden w-full sm:w-auto"
+                            onHoverStart={() => setPortalHover(true)}
+                            onHoverEnd={() => setPortalHover(false)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
+                            {/* Portal Opening Effect */}
+                            <AnimatePresence>
+                              {portalHover && (
+                                <motion.div
+                                  className="absolute inset-0"
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ 
+                                    scale: [0, 1.2, 1],
+                                    opacity: [0, 0.5, 0],
+                                    rotate: 360,
+                                  }}
+                                  exit={{ scale: 0, opacity: 0 }}
+                                  transition={{ duration: 0.6 }}
+                                >
+                                  <div className="w-full h-full bg-gradient-to-r from-amber-400 via-rose-500 to-purple-500 rounded-xl sm:rounded-2xl blur-2xl" />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
                             <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-rose-500 rounded-xl sm:rounded-2xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
                             <div className="relative bg-gradient-to-r from-amber-500 to-rose-500 p-[2px] rounded-xl sm:rounded-2xl">
                               <div className="bg-black rounded-xl sm:rounded-2xl px-8 sm:px-12 py-4 sm:py-5 group-hover:bg-transparent transition-all duration-700">
                                 <div className="flex items-center justify-center space-x-3 sm:space-x-4">
-                                  <span className="text-white group-hover:text-black text-xs sm:text-sm font-light tracking-[0.2em] transition-colors duration-700">
+                                  <motion.span 
+                                    className="text-white group-hover:text-black text-xs sm:text-sm font-light tracking-[0.2em] transition-colors duration-700"
+                                    animate={portalHover ? {
+                                      textShadow: [
+                                        "0 0 0px rgba(255,255,255,0)",
+                                        "0 0 10px rgba(255,215,0,0.8)",
+                                        "0 0 0px rgba(255,255,255,0)"
+                                      ]
+                                    } : {}}
+                                  >
                                     {isSubmitting
                                       ? "TRANSMITTING"
                                       : "SEND INQUIRY"}
-                                  </span>
-                                  <Send
-                                    className={`w-4 h-4 sm:w-5 sm:h-5 text-white group-hover:text-black transition-all duration-700 ${
-                                      isSubmitting
-                                        ? "animate-pulse"
-                                        : "group-hover:translate-x-1"
-                                    }`}
-                                  />
+                                  </motion.span>
+                                  <motion.div
+                                    animate={isSubmitting ? {
+                                      rotate: 360,
+                                    } : portalHover ? {
+                                      x: [0, 5, 0],
+                                      scale: [1, 1.2, 1],
+                                    } : {}}
+                                    transition={{
+                                      duration: isSubmitting ? 1 : 0.5,
+                                      repeat: isSubmitting ? Infinity : 0,
+                                    }}
+                                  >
+                                    <Send
+                                      className={`w-4 h-4 sm:w-5 sm:h-5 text-white group-hover:text-black transition-all duration-700`}
+                                    />
+                                  </motion.div>
                                 </div>
                               </div>
                             </div>
-                          </button>
+                          </motion.button>
                         </div>
                       </form>
                     </div>

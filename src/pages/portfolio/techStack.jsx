@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { motion, useAnimation } from "framer-motion";
 
 // Constants
 const FINAL_STATS = {
@@ -74,40 +75,109 @@ const TECH_STACK = [
 
 const INTERSECTION_THRESHOLD = 0.2;
 
-// Memoized Components
-const TechCard = React.memo(({ tech, index }) => (
-  <div
-    className="flex-shrink-0 mx-4 sm:mx-6 md:mx-8 lg:mx-12 group cursor-pointer"
-    style={{ animationDelay: `${index * 0.1}s` }}
-  >
-    <div className="relative">
-      <div
-        className={`absolute -inset-3 sm:-inset-4 md:-inset-6 bg-gradient-to-r ${tech.accent} opacity-0 group-hover:opacity-20 blur-xl sm:blur-2xl rounded-2xl sm:rounded-3xl transition-all duration-700`}
-      />
+// Memoized Components with Ken Burns Effect
+const TechCard = React.memo(({ tech, index }) => {
+  const controls = useAnimation();
 
-      <div className="relative transition-all duration-500">
-        <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group-hover:border-white/20 transition-all duration-500">
-          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4 md:mb-6 text-center">
-            <span
-              className={`bg-gradient-to-r ${tech.accent} bg-clip-text text-transparent font-bold`}
-            >
-              {tech.icon}
-            </span>
-          </div>
+  return (
+    <motion.div
+      className="flex-shrink-0 mx-4 sm:mx-6 md:mx-8 lg:mx-12 group cursor-pointer"
+      style={{ animationDelay: `${index * 0.1}s` }}
+      onHoverStart={() => {
+        controls.start({
+          scale: 1.15,
+          rotate: [0, 2, -2, 0],
+          transition: { duration: 0.5 }
+        });
+      }}
+      onHoverEnd={() => {
+        controls.start({
+          scale: 1,
+          rotate: 0,
+          transition: { duration: 0.3 }
+        });
+      }}
+    >
+      <div className="relative">
+        <motion.div
+          className={`absolute -inset-3 sm:-inset-4 md:-inset-6 bg-gradient-to-r ${tech.accent} opacity-0 group-hover:opacity-20 blur-xl sm:blur-2xl rounded-2xl sm:rounded-3xl transition-all duration-700`}
+          animate={{
+            opacity: [0, 0.2, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
 
-          <div className="text-center">
-            <div className="text-white/90 text-sm sm:text-base md:text-lg font-light tracking-wide mb-1 sm:mb-2">
-              {tech.name}
-            </div>
-            <div
-              className={`w-8 sm:w-10 md:w-12 h-px bg-gradient-to-r ${tech.accent} mx-auto opacity-60 group-hover:opacity-100 transition-opacity duration-500`}
+        <motion.div 
+          className="relative transition-all duration-500"
+          animate={controls}
+          whileHover={{
+            boxShadow: "0 0 30px rgba(255, 215, 0, 0.3)",
+          }}
+        >
+          <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group-hover:border-white/20 transition-all duration-500 overflow-hidden">
+            {/* Ken Burns Effect Background */}
+            <motion.div
+              className="absolute inset-0 opacity-0 group-hover:opacity-10"
+              animate={{
+                scale: [1, 1.1, 1],
+                x: [0, 10, 0],
+                y: [0, -10, 0],
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              style={{
+                background: `radial-gradient(circle at center, ${tech.accent.split(' ')[1]}, transparent)`
+              }}
             />
+
+            <motion.div 
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4 md:mb-6 text-center relative z-10"
+              whileHover={{
+                scale: 1.2,
+                rotate: 360,
+                transition: { duration: 0.6 }
+              }}
+            >
+              <span
+                className={`bg-gradient-to-r ${tech.accent} bg-clip-text text-transparent font-bold`}
+              >
+                {tech.icon}
+              </span>
+            </motion.div>
+
+            <div className="text-center relative z-10">
+              <motion.div 
+                className="text-white/90 text-sm sm:text-base md:text-lg font-light tracking-wide mb-1 sm:mb-2"
+                whileHover={{ scale: 1.1 }}
+              >
+                {tech.name}
+              </motion.div>
+              <motion.div
+                className={`w-8 sm:w-10 md:w-12 h-px bg-gradient-to-r ${tech.accent} mx-auto opacity-60 group-hover:opacity-100 transition-opacity duration-500`}
+                animate={{
+                  scaleX: [1, 1.5, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
-  </div>
-));
+    </motion.div>
+  );
+});
 
 TechCard.displayName = "TechCard";
 
@@ -121,12 +191,39 @@ const StatCard = React.memo(
     showPlus = true,
     showPercent = false,
   }) => (
-    <div className="relative group text-center">
-      <div
+    <motion.div 
+      className="relative group text-center"
+      whileHover={{
+        scale: 1.05,
+        rotateY: 10,
+        rotateX: 5,
+        z: 50,
+      }}
+      style={{
+        transformStyle: "preserve-3d",
+        perspective: 1000,
+      }}
+    >
+      <motion.div
         className={`absolute -inset-4 sm:-inset-6 md:-inset-8 bg-gradient-to-r ${accentColor} blur-2xl sm:blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000`}
+        animate={{
+          scale: [1, 1.2, 1],
+          rotate: [0, 180, 360],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "linear"
+        }}
       />
 
-      <div className="relative">
+      <motion.div 
+        className="relative"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: "translateZ(30px)"
+        }}
+      >
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
           <div
             className={`w-8 sm:w-12 md:w-16 h-px bg-gradient-to-r from-transparent ${
@@ -179,8 +276,8 @@ const StatCard = React.memo(
             }/40 to-transparent`}
           />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 );
 
